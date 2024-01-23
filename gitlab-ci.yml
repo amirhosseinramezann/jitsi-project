@@ -1,0 +1,52 @@
+stages:
+  - build
+  - test
+  - deploy to preview
+  - deploy to production
+
+variables:
+
+
+build app:
+  stage: build
+  tags:
+    - runner-01
+  script:
+    - mvn package
+
+test app:
+  stage: test
+  tags:
+    - runner-01
+  script:
+    - mvn test
+
+
+deploy to preview:
+ stage: deploy to preview
+ tags:
+  - runner-01
+ environment:
+    name: Preview
+    url: "http://preview.jitsi.com"
+ script:
+  - echo "Deploying your Java application"
+  - scp target/*.jar user@preview-server-ip:/path/deployment/
+  - ssh user@preview-server-ip "sudo systemctl restart jitsi"
+ needs: ["test app"]
+
+
+ 
+deploy to production:
+ stage: deploy to production
+ tags:
+  - runner-01
+ environment:
+  name: Production
+  url: "http://www.jitsi.com"
+ when: manual
+ script:
+  - echo "Deploying your Java application"
+  - scp target/*.jar user@preview-server-ip:/path/deployment/
+  - ssh user@preview-server-ip "sudo systemctl restart jitsi"
+ needs: ["test app", "deploy to preview"]
